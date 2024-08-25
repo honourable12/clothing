@@ -1,103 +1,102 @@
 import streamlit as st
 import requests
 
-API_URL = "http://127.0.0.1:8000"  # Update this if your FastAPI app is running on a different address or port
+# API URL
+API_URL = "http://127.0.0.1:8000"
 
-# Function to authenticate user
-def authenticate(email, password):
-    response = requests.post(f"{API_URL}/token", data={"username": email, "password": password})
+# Utility functions
+def authenticate(username, password):
+    response = requests.post(f"{API_URL}/authenticate", data={"username": username, "password": password})
     if response.status_code == 200:
-        return response.json()["access_token"]
+        return response.json()
     else:
-        st.error("Invalid credentials")
+        st.error("Authentication failed.")
         return None
 
-# Function to add a new employee
-def add_employee(token, first_name, last_name, email, password, role):
-    headers = {"Authorization": f"Bearer {token}"}
-    data = {
-        "FirstName": first_name,
-        "LastName": last_name,
-        "Email": email,
-        "Password": password,
-        "Role": role,
-    }
-    response = requests.post(f"{API_URL}/employees", json=data, headers=headers)
+def get_customers(token):
+    response = requests.get(f"{API_URL}/customers", headers={"Authorization": f"Bearer {token}"})
     if response.status_code == 200:
-        st.success("Employee added successfully!")
+        return response.json()
     else:
-        st.error("Failed to add employee")
+        st.error("Failed to fetch customers.")
+        return []
 
-# Function to view orders
-def view_orders(token):
-    headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(f"{API_URL}/orders", headers=headers)
-    return response.json()
-
-# Function to add a product
-def add_product(token, name, description, price):
-    headers = {"Authorization": f"Bearer {token}"}
-    data = {
-        "ProductName": name,
-        "Description": description,
-        "Price": price,
-        "StockQuantity": 0,  # Default quantity
-    }
-    response = requests.post(f"{API_URL}/products", json=data, headers=headers)
+def create_customer(data, token):
+    response = requests.post(f"{API_URL}/customers", json=data, headers={"Authorization": f"Bearer {token}"})
     if response.status_code == 200:
-        st.success("Product added successfully!")
+        st.success("Customer created successfully.")
     else:
-        st.error("Failed to add product")
+        st.error("Failed to create customer.")
 
-# Function to view products
-def view_products(token):
-    headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(f"{API_URL}/products", headers=headers)
-    return response.json()
+def get_products(token):
+    response = requests.get(f"{API_URL}/products", headers={"Authorization": f"Bearer {token}"})
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error("Failed to fetch products.")
+        return []
 
-# Streamlit UI
-st.title("Clothing Store Management")
+def create_product(data, token):
+    response = requests.post(f"{API_URL}/products", json=data, headers={"Authorization": f"Bearer {token}"})
+    if response.status_code == 200:
+        st.success("Product created successfully.")
+    else:
+        st.error("Failed to create product.")
 
-email = st.text_input("Email")
+st.title("Clothing Business Management")
+
+st.header("Login")
+username = st.text_input("Username")
 password = st.text_input("Password", type="password")
 
 if st.button("Login"):
-    token = authenticate(email, password)
-    if token:
-        st.success("Logged in successfully!")
-        st.session_state.token = token
+    user = authenticate(username, password)
+    if user:
+        st.session_state.token = user['token']
+        st.session_state.user = user
+
+        st.success(f"Welcome, {user['FirstName']} {user['LastName']}!")
+
+        # Customers
+        st.header("Manage Customers")
+        if st.button("Load Customers"):
+            customers = get_customers(st.session_state.token)
+            st.write(customers)
+
+        st.subheader("Add Customer")
+        with st.form("add_customer"):
+            first_name = st.text_input("First Name")
+            last_name = st.text_input("Last Name")
+            email = st.text_input("Email")
+            phone_number = st.text_input("Phone Number")
+            submitted = st.form_submit_button("Add Customer")
+            if submitted:
+                create_customer({
+                    "FirstName": first_name,
+                    "LastName": last_name,
+                    "Email": email,
+                    "PhoneNumber": phone_number
+                }, st.session_state.token)
+
+        # Products
+        st.header("Manage Products")
+        if st.button("Load Products"):
+            products = get_products(st.session_state.token)
+            st.write(products)
+
+        st.subheader("Add Product")
+        with st.form("add_product"):
+            name = st.text_input("Product Name")
+            description = st.text_area("Description")
+            price = st.number_input("Price", min_value=0.0, format="%.2f")
+            stock = st.number_input("Stock", min_value=0)
+            submitted = st.form_submit_button("Add Product")
+            if submitted:
+                create_product({
+                    "Name": name,
+                    "Description": description,
+                    "Price": price,
+                    "Stock": stock
+                }, st.session_state.token)
     else:
-        st.error("Login failed. Check your credentials.")
-
-if "token" in st.session_state:
-    st.subheader("Manage Employees")
-    with st.expander("Add Employee"):
-        first_name = st.text_input("First Name")
-        last_name = st.text_input("Last Name")
-        employee_email = st.text_input("Employee Email")
-        employee_password = st.text_input("Employee Password", type="password")
-        role = st.selectbox("Role", ["Admin", "Employee"])
-
-        if st.button("Add Employee"):
-            add_employee(st.session_state.token, first_name, last_name, employee_email, employee_password, role)
-
-    st.subheader("View Orders")
-    if st.button("Load Orders"):
-        orders = view_orders(st.session_state.token)
-        for order in orders:
-            st.write(order)
-
-    st.subheader("Manage Products")
-    with st.expander("Add Product"):
-        product_name = st.text_input("Product Name")
-        product_description = st.text_area("Product Description")
-        product_price = st.number_input("Price", min_value=0.0, step=0.01)
-
-        if st.button("Add Product"):
-            add_product(st.session_state.token, product_name, product_description, product_price)
-
-    st.subheader("View Products")
-    if st.button("Load Products"):
-        products = view_products(st.session_state.token)
-        for product in products:
-            st.write(product)
+        st.error("Invalid credentials.")

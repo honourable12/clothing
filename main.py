@@ -8,7 +8,6 @@ app = FastAPI()
 DATABASE = 'clothing_business.db'
 
 
-# Database connection
 def get_db_connection():
   conn = sqlite3.connect(DATABASE)
   conn.row_factory = sqlite3.Row
@@ -88,15 +87,23 @@ class Payment(BaseModel):
   PaymentDate: str
   PaymentStatus: str
 
-
-def authenticate(username: str = "admin", password: str = "admin"):
+def authenticatet(username: str, password: str):
   conn = get_db_connection()
   employee = conn.execute('SELECT * FROM Employees WHERE Email = ? AND Password = ?', (username, password)).fetchone()
   conn.close()
   if employee:
     return dict(employee)
   else:
-    raise HTTPException(status_code=401, detail="Unauthorized")
+    raise HTTPException(status_code = 401, detail = "Unauthorized")
+
+
+@app.post("/authenticate")
+def authenticate(username: str, password: str):
+  user = authenticatet(username, password)
+  if user:
+    return {"FirstName": user["FirstName"], "LastName": user["LastName"], "Role": user["Role"]}
+  else:
+    raise HTTPException(status_code = 401, detail = "Invalid credentials")
 
 
 # Create Tables
@@ -215,7 +222,6 @@ def create_default_admin():
 create_default_admin()
 
 
-# Secured CRUD operations for Customers
 @app.post("/customers", response_model=Customer)
 def create_customer(customer: Customer):
   conn = get_db_connection()
@@ -279,7 +285,6 @@ def delete_customer(customer_id: int, username: str = Depends(authenticate)):
   return {"detail": "Customer deleted successfully"}
 
 
-# Secured CRUD operations for Products
 @app.post("/products", response_model=Product)
 def create_product(product: Product, username: str = Depends(authenticate)):
   conn = get_db_connection()
@@ -343,7 +348,6 @@ def delete_product(product_id: int, username: str = Depends(authenticate)):
   return {"detail": "Product deleted successfully"}
 
 
-# Secured CRUD operations for Orders
 @app.post("/orders", response_model=Order)
 def create_order(order: Order, username: str = Depends(authenticate)):
   conn = get_db_connection()
