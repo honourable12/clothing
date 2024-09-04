@@ -22,7 +22,7 @@ class Customer(BaseModel):
     FirstName: str = Field(..., min_length=1, max_length=50)
     LastName: str = Field(..., min_length=1, max_length=50)
     Email: EmailStr
-    PhoneNumber: str = Field(..., regex="^\\+?\\d{10,14}$")
+    PhoneNumber: str = Field(..., pattern="^\\+?\\d{10,14}$")
 
 class Product(BaseModel):
     ProductID: Optional[int] = None
@@ -41,8 +41,8 @@ class Order(BaseModel):
     State: str
     ZipCode: str
     Country: str
-    Status: str = Field(..., regex="^(Pending|Processing|Shipped|Delivered|Cancelled)$")
-    PaymentStatus: str = Field(..., regex="^(Pending|Paid|Refunded)$")
+    Status: str = Field(..., pattern="^(Pending|Processing|Shipped|Delivered|Cancelled)$")
+    PaymentStatus: str = Field(..., pattern="^(Pending|Paid|Refunded)$")
 
 class OrderDetail(BaseModel):
     OrderDetailID: Optional[int] = None
@@ -57,7 +57,7 @@ class Employee(BaseModel):
     LastName: str = Field(..., min_length=1, max_length=50)
     Email: EmailStr
     Password: str = Field(..., min_length=8)
-    Role: str = Field(..., regex="^(Admin|Manager|Staff)$")
+    Role: str = Field(..., pattern="^(Admin|Manager|Staff)$")
 
 class Shipping(BaseModel):
     ShippingID: Optional[int] = None
@@ -71,7 +71,7 @@ class InventoryLog(BaseModel):
     LogID: Optional[int] = None
     ProductID: int
     EmployeeID: int
-    ChangeType: str = Field(..., regex="^(Restock|Sale|Return|Adjustment)$")
+    ChangeType: str = Field(..., pattern="^(Restock|Sale|Return|Adjustment)$")
     QuantityChange: int
     ChangeDate: date
 
@@ -80,7 +80,7 @@ class Payment(BaseModel):
     OrderID: int
     Amount: float = Field(..., gt=0)
     PaymentDate: date
-    PaymentMethod: str = Field(..., regex="^(Credit Card|Debit Card|PayPal|Bank Transfer)$")
+    PaymentMethod: str = Field(..., pattern="^(Credit Card|Debit Card|PayPal|Bank Transfer)$")
 
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     conn = get_db_connection()
