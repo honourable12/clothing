@@ -1,0 +1,6 @@
+fastapi
+pydantic
+sqlite3
+bcrypt
+pyjwt
+uvicorn
