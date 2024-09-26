@@ -825,5 +825,4 @@ async def get_sales_report(start_date: str, end_date: str, current_user: Employe
 
 if __name__ == "__main__":
 	import uvicorn
-
-	uvicorn.run("main:app", host = "127.0.0.1", port = 8000, reload = True)
+	uvicorn.run("main:app", host = "127.0.1.1", port = 8001, reload = True)
